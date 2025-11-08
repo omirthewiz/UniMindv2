@@ -2,22 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { format } from 'date-fns';
 
-const getApiUrl = () => {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    if (hostname.includes('replit.dev')) {
-      const protocol = window.location.protocol;
-      const backendHost = hostname.replace(/-5000-|-3000-|-00-/, '-8000-00-');
-      return `${protocol}//${backendHost}`;
-    }
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:8000';
-    }
-  }
-  return process.env.REACT_APP_API_URL || 'http://localhost:8000';
-};
-
-const API_URL = getApiUrl();
+const API_URL = '';
 
 interface Message {
   user_message?: string;
@@ -112,13 +97,22 @@ const Dashboard: React.FC = () => {
             <div className="bg-sage-100 text-sage-800 px-4 py-3 rounded-lg font-medium">
               Dashboard
             </div>
-            <div className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer">
+            <div 
+              onClick={() => alert('Journal page coming soon! This will show your mood tracking history and insights.')}
+              className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer"
+            >
               Journal
             </div>
-            <div className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer">
+            <div 
+              onClick={() => alert('Check-In page coming soon! This will provide daily wellness check-ins and reflections.')}
+              className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer"
+            >
               Check-In
             </div>
-            <div className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer">
+            <div 
+              onClick={() => alert('Resources page coming soon! This will show mental health resources based on your school.')}
+              className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer"
+            >
               Resources
             </div>
           </nav>
