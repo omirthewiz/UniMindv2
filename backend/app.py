@@ -234,7 +234,7 @@ def get_journal_entries():
 def get_resources():
     school = request.args.get('school', '').strip()
 
-    # Global nationwide resources (always shown)
+    # Always show nationwide resources
     global_resources = [
         {
             "name": "988 Suicide & Crisis Lifeline",
@@ -253,67 +253,83 @@ def get_resources():
         },
         {
             "name": "SAMHSA National Helpline",
-            "description": "24/7 treatment referral and information for individuals facing mental health or substance use issues.",
+            "description": "24/7 treatment referral and information for mental health or substance use issues.",
             "url": "https://findtreatment.gov"
         }
     ]
 
-    # Local / campus-specific section
+    # If no school provided, return just global and an empty local list
     if not school:
-        school_specific = [{
-            "name": "Select your school",
-            "description": "Enter your school name above to see campus-specific resources."
-        }]
-    else:
-        school_specific = get_school_resources(school)
+        return jsonify({
+            "global": global_resources,
+            "local": [],
+            "school_specific": []   # backward compatibility with old frontend key
+        }), 200
 
-    return jsonify({
-        "global": global_resources,
-        "school_specific": school_specific
-    }), 200
+    GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY")
+    if not GOOGLE_PLACES_API_KEY:
+        # If key missing, avoid crashing; return global only
+        return jsonify({
+            "global": global_resources,
+            "local": [],
+            "school_specific": [],
+            "error": "GOOGLE_PLACES_API_KEY not set on server"
+        }), 200
 
+    try:
+        # 1) Geocode the college name to lat/lng
+        geo = requests.get(
+            "https://maps.googleapis.com/maps/api/geocode/json",
+            params={"address": school, "key": GOOGLE_PLACES_API_KEY},
+            timeout=10
+        ).json()
 
-def get_school_resources(school):
-    """Return custom resource data for known schools, else generic fallback."""
-    school_lower = school.lower()
+        if not geo.get("results"):
+            return jsonify({
+                "global": global_resources,
+                "local": [],
+                "school_specific": [],
+                "note": f"No geocoding results for '{school}'"
+            }), 200
 
-    if "buffalo" in school_lower or "ub" in school_lower:
-        return [
-            {
-                "name": "UB Counseling Services",
-                "description": "Provides free, confidential counseling and therapy to UB students.",
-                "url": "https://www.buffalo.edu/studentlife/who-we-are/departments/counseling.html"
+        loc = geo["results"][0]["geometry"]["location"]
+        lat, lng = loc["lat"], loc["lng"]
+
+        # 2) Search nearby mental-health resources (within ~15km / ~9mi)
+        places = requests.get(
+            "https://maps.googleapis.com/maps/api/place/nearbysearch/json",
+            params={
+                "location": f"{lat},{lng}",
+                "radius": 15000,
+                "keyword": "mental health OR counseling OR therapy OR wellness",
+                "key": GOOGLE_PLACES_API_KEY,
             },
-            {
-                "name": "Crisis Services of Erie County",
-                "description": "24-hour crisis hotline and mobile outreach for mental health emergencies.",
-                "url": "https://crisisservices.org/"
-            }
-        ]
-    elif "mit" in school_lower:
-        return [
-            {
-                "name": "MIT Student Mental Health & Counseling",
-                "description": "Support for MIT students' emotional and psychological well-being.",
-                "url": "https://medical.mit.edu/mental-health"
-            }
-        ]
-    elif "ucla" in school_lower:
-        return [
-            {
-                "name": "UCLA Counseling & Psychological Services (CAPS)",
-                "description": "Provides mental health support and workshops for UCLA students.",
-                "url": "https://www.counseling.ucla.edu/"
-            }
-        ]
-    else:
-        return [
-            {
-                "name": f"{school} Counseling Center",
-                "description": "Campus mental health services and support.",
-                "url": "#"
-            }
-        ]
+            timeout=10
+        ).json()
+
+        local_resources = []
+        for p in places.get("results", []):
+            local_resources.append({
+                "name": p.get("name"),
+                "address": p.get("vicinity"),
+                "rating": p.get("rating"),
+                "url": f"https://www.google.com/maps/place/?q=place_id:{p.get('place_id')}"
+            })
+
+        # Return both 'local' and 'school_specific' to avoid breaking the current UI
+        return jsonify({
+            "global": global_resources,
+            "local": local_resources,
+            "school_specific": local_resources
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "global": global_resources,
+            "local": [],
+            "school_specific": [],
+            "error": str(e)
+        }), 500
 
 # -----------------------------------------------------------
 # Calendar Mock Data
