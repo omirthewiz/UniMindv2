@@ -3,6 +3,8 @@ import axios from 'axios';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { app } from '../firebaseConfig'; //  Firebase setup
 import { format } from 'date-fns';
+import { useAuth0 } from "@auth0/auth0-react";
+
 
 const API_URL = ''; // Flask backend URL (proxy handles this in dev)
 
@@ -20,6 +22,8 @@ interface CalendarEvent {
 }
 
 const Dashboard: React.FC = () => {
+  const { logout } = useAuth0();
+  const { user } = useAuth0();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -151,13 +155,33 @@ const Dashboard: React.FC = () => {
         {/* Main Content */}
         <main className="flex-1 p-8">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-4xl font-bold text-sage-800">Welcome, Emily 😌</h2>
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-lavender-300 rounded-full flex items-center justify-center text-white">
-                👤
-              </div>
-            </div>
-          </div>
+  <h2 className="text-4xl font-bold text-sage-800">
+  Welcome, {user?.given_name || user?.name || "Friend"} 😌
+</h2>
+
+
+<div className="flex items-center gap-4">
+    {user?.picture ? (
+      <img
+        src={user.picture}
+        alt="Profile"
+        className="w-10 h-10 rounded-full border border-sage-300 shadow-sm"
+      />
+    ) : (
+      <div className="w-10 h-10 bg-lavender-300 rounded-full flex items-center justify-center text-white">
+        👤
+      </div>
+    )}
+
+    <button
+      onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+      className="px-4 py-2 bg-lavender-400 hover:bg-lavender-500 text-white rounded-lg shadow-sm transition"
+    >
+      Logout
+    </button>
+  </div>
+</div>
+
 
           <h3 className="text-3xl font-semibold text-sage-700 mb-6">
             AI-Powered Mental Wellness Companion
