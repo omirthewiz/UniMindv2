@@ -1,15 +1,13 @@
 import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { BrowserRouter as Router, Routes, Route, useNavigate, Outlet } from "react-router-dom"; 
-import Dashboard from "./components/Dashboard"; 
+// NOTE: Renamed the import to match the corrected export in DashboardPage.tsx
+import DashboardPage from "./components/Dashboard"; 
 import Resources from "./pages/Resources";
 import Login from "./pages/Login";
-<<<<<<< HEAD
-import Journal from "./pages/Journal";
-=======
-import Calendar from "./pages/Calendar"; 
+import Journal from "./pages/Journal"; // Kept the Journal import from HEAD
+import Calendar from "./pages/Calendar"; // Kept the Calendar import from calendar-sidebar
 
->>>>>>> origin/calendar-sidebar
 import "./App.css";
 
 // --- MainLayout Component (Correct for Routing with Outlet) ---
@@ -19,15 +17,22 @@ const MainLayout: React.FC = () => {
     const navigate = useNavigate();
     const path = window.location.pathname;
 
-    const showComingSoon = (pageName: string) => {
-        console.error(`${pageName} page coming soon!`);
+    // Helper function to handle pages that aren't yet fully implemented
+    const handleNavigation = (to: string, isComingSoon: boolean, pageName: string) => {
+        if (isComingSoon) {
+            // Note: Since you cannot use window.alert/confirm, this is a placeholder. 
+            // In a real app, you'd show a custom modal notification.
+            console.log(`${pageName} page coming soon!`);
+        } else {
+            navigate(to);
+        }
     };
     
-    const NavLink = ({ to, label, isActive, onClick }: { to: string; label: string; isActive: boolean; onClick?: () => void; }) => (
+    const NavLink = ({ to, label, onClick }: { to: string; label: string; onClick: () => void; }) => (
         <div
-            onClick={onClick || (() => navigate(to))}
+            onClick={onClick}
             className={`px-4 py-3 rounded-lg font-medium cursor-pointer transition ${
-                isActive 
+                path === to || (to === '/' && path === '/') 
                     ? 'bg-sage-100 text-sage-800' 
                     : 'text-sage-600 hover:bg-sage-50'
             }`}
@@ -46,11 +51,16 @@ const MainLayout: React.FC = () => {
                         <h1 className="text-2xl font-bold text-sage-800">UniMind</h1>
                     </div>
                     <nav className="space-y-2">
-                        <NavLink to="/" label="Dashboard" isActive={path === '/'} />
-                        <NavLink to="" label="Journal" isActive={false} onClick={() => showComingSoon('Journal')} />
-                        <NavLink to="" label="Check-In" isActive={false} onClick={() => showComingSoon('Check-In')} />
-                        <NavLink to="/calendar" label="Calendar" isActive={path === '/calendar'} />
-                        <NavLink to="/resources" label="Resources" isActive={path === '/resources'} />
+                        {/* Navigation Links using the unified navigate function */}
+                        <NavLink to="/" label="Dashboard" onClick={() => navigate("/")} />
+                        <NavLink to="/journal" label="Journal" onClick={() => navigate("/journal")} />
+                        <NavLink 
+                            to="/check-in" 
+                            label="Check-In" 
+                            onClick={() => handleNavigation("/check-in", true, 'Check-In')} 
+                        />
+                        <NavLink to="/calendar" label="Calendar" onClick={() => navigate("/calendar")} />
+                        <NavLink to="/resources" label="Resources" onClick={() => navigate("/resources")} />
                     </nav>
                     
                      <div className="mt-8 pt-6 border-t border-sage-100">
@@ -72,7 +82,7 @@ const MainLayout: React.FC = () => {
                     </div>
                 </aside>
 
-                {/* FIX: Use Outlet to render the nested content */}
+                {/* The Outlet renders the content of the nested routes */}
                 <main className="flex-1 p-8">
                     <Outlet /> 
                 </main>
@@ -99,24 +109,19 @@ function App() {
     <Router>
       {isAuthenticated ? (
         <Routes>
-<<<<<<< HEAD
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/resources" element={<Resources />} />
-          <Route path="/journal" element={<Journal />} />
-=======
-          {/* 1. Parent Route: Uses MainLayout */}
+          {/* 1. Parent Route: Uses MainLayout and applies it to all children */}
           <Route path="/" element={<MainLayout />}>
             
             {/* 2. Nested Children (Content renders in the Outlet) */}
-            <Route index element={<Dashboard />} /> {/* / */}
+            <Route index element={<DashboardPage />} /> {/* Route for / */}
             <Route path="calendar" element={<Calendar />} />
             <Route path="resources" element={<Resources />} />
+            <Route path="journal" element={<Journal />} /> {/* Added Journal route */}
 
-            {/* FIX: Use the Dashboard as the fallback page inside the layout */}
-            <Route path="*" element={<Dashboard />} /> 
+            {/* Fallback route within the layout */}
+            <Route path="*" element={<DashboardPage />} /> 
 
           </Route>
->>>>>>> origin/calendar-sidebar
         </Routes>
       ) : (
         <Login />
