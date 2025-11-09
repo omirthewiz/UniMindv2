@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
 app = Flask(__name__)
 
+CORS(app, origins=[os.getenv("FRONTEND_ORIGIN", "*")])
+
 @app.route("/")
 def index():
     return jsonify({"status": "ok", "message": "UniMind backend is running"}), 200
