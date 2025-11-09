@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
 import { app } from '../firebaseConfig'; //  Firebase setup
@@ -33,6 +33,11 @@ const Dashboard: React.FC = () => {
 
   const navigate = useNavigate(); // ✅ ADDED
 
+  // 🧠 New refs and states for scrolling
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [userScrolled, setUserScrolled] = useState(false);
+
   const moods = [
     { emoji: '😔', value: 'sad' },
     { emoji: '😐', value: 'neutral' },
@@ -42,7 +47,19 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchCalendarEvents();
-  }, []);
+    if (user) {
+      fetchChatHistory();
+    }
+  }, [user]);
+
+  const fetchChatHistory = async () => {
+    try {
+      const res = await axios.get(`${API_URL}/api/chat/history?user_id=${user?.sub}`);
+      setMessages(res.data.messages || []);
+    } catch (err) {
+      console.error("Error loading chat history:", err);
+    }
+  };
 
   const fetchCalendarEvents = async () => {
     try {
@@ -63,9 +80,9 @@ const Dashboard: React.FC = () => {
     try {
       const response = await axios.post(`${API_URL}/api/chat`, {
         message: userMsg,
-        user_id: 'demo_user',
+        user_id: user?.sub || "guest_user",
         calendar_events: events,
-      });
+      });      
 
       const newMessage: Message = {
         user_message: userMsg,
@@ -73,7 +90,7 @@ const Dashboard: React.FC = () => {
         timestamp: response.data.timestamp,
       };
 
-      setMessages([...messages, newMessage]);
+      setMessages((prev) => [...prev, newMessage]);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -108,6 +125,29 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // ✅ Auto-scroll to bottom when messages update
+  useEffect(() => {
+    if (!chatContainerRef.current || !bottomRef.current) return;
+
+    const container = chatContainerRef.current;
+    const isNearBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+
+    if (isNearBottom || !userScrolled) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
+
+  // ✅ Scroll to bottom on initial load
+  useEffect(() => {
+    if (!bottomRef.current) return;
+    // Wait for the DOM to paint, then scroll
+    const timeout = setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+    return () => clearTimeout(timeout);
+  }, [messages]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-sage-50 via-lavender-50 to-gold-50">
       <div className="flex">
@@ -122,14 +162,10 @@ const Dashboard: React.FC = () => {
               Dashboard
             </div>
             <div
-              onClick={() =>
-                alert(
-                  'Journal page coming soon! This will show your mood tracking history and insights.'
-                )
-              }
-              className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer"
-            >
-              Journal
+                onClick={() => navigate("/journal")}
+                className="text-sage-600 px-4 py-3 rounded-lg hover:bg-sage-50 cursor-pointer"
+              >
+                Journal
             </div>
             <div
               onClick={() =>
@@ -209,7 +245,12 @@ const Dashboard: React.FC = () => {
                 <h4 className="text-lg font-semibold text-lavender-800">Quick Check-In</h4>
               </div>
 
-              <div className="mb-4 max-h-64 overflow-y-auto space-y-4">
+              {/* ✅ Chat container with auto-scroll */}
+              <div
+                ref={chatContainerRef}
+                className="mb-4 max-h-64 overflow-y-auto space-y-4"
+                onScroll={() => setUserScrolled(true)}
+              >
                 {messages.map((msg, index) => (
                   <div key={index}>
                     {msg.user_message && (
@@ -233,6 +274,7 @@ const Dashboard: React.FC = () => {
                     <p className="text-sm mt-2">How are you feeling today?</p>
                   </div>
                 )}
+                <div ref={bottomRef}></div>
               </div>
 
               <div className="flex gap-2">

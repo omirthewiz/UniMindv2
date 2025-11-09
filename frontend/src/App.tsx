@@ -4,10 +4,12 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "./components/Dashboard";
 import Resources from "./pages/Resources";
 import Login from "./pages/Login";
+import Journal from "./pages/Journal";
 import "./App.css";
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth0();
+  console.log("Auth0 context loaded:", isAuthenticated, isLoading);
 
   if (isLoading) {
     return (
@@ -23,6 +25,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/resources" element={<Resources />} />
+          <Route path="/journal" element={<Journal />} />
         </Routes>
       ) : (
         <Login />
