@@ -22,8 +22,7 @@ interface CalendarEvent {
 }
 
 const Dashboard: React.FC = () => {
-  const { logout } = useAuth0();
-  const { user } = useAuth0();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,18 +37,46 @@ const Dashboard: React.FC = () => {
     { emoji: '😁', value: 'excited' },
   ];
 
+const { user, logout, getAccessTokenSilently } = useAuth0();
+
+
+const fetchCalendarEvents = async () => {
+  try {
+    const token = await getAccessTokenSilently({
+      authorizationParams: {
+        audience: "https://www.googleapis.com", 
+        scope: "https://www.googleapis.com/auth/calendar.readonly"
+      }
+    });
+
+    const response = await axios.get(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const eventData = response.data.items.map((event: any) => ({
+      title: event.summary,
+      date: event.start.date || event.start.dateTime?.split("T")[0],
+      time: event.start.dateTime
+        ? new Date(event.start.dateTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "All day",
+      type: "calendar"
+    }));
+
+    setEvents(eventData);
+  } catch (error) {
+    console.error("Error fetching Google Calendar events:", error);
+  }
+};
+
   useEffect(() => {
     fetchCalendarEvents();
   }, []);
 
-  const fetchCalendarEvents = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/calendar/events`);
-      setEvents(response.data.events);
-    } catch (error) {
-      console.error('Error fetching calendar events:', error);
-    }
-  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
