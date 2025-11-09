@@ -59,20 +59,20 @@ def chat():
         user_message = data.get('message', '')
         user_id = data.get('user_id', 'demo_user')
         calendar_events = data.get('calendar_events', [])
-        
+
         if not user_message:
             return jsonify({"error": "Message is required"}), 400
-        
+
         emotion_data = detect_emotion(user_message)
         ai_response = generate_empathetic_response(user_message, emotion_data, calendar_events)
-        
+
         chat_entry = {
             "user_message": user_message,
             "ai_response": ai_response,
             "emotion": emotion_data,
             "timestamp": datetime.now().isoformat()
         }
-        
+
         if user_id not in chat_sessions:
             chat_sessions[user_id] = []
         chat_sessions[user_id].append(chat_entry)
@@ -89,7 +89,7 @@ def chat():
             "emotion": emotion_data,
             "timestamp": chat_entry["timestamp"]
         }), 200
-        
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -104,7 +104,7 @@ def detect_emotion(message):
             "confidence": 0.7,
             "note": "Using mock data - add BLOSSOMS_API_KEY to environment"
         }
-    
+
     try:
         response = requests.post(
             'https://api.blossoms.ai/v1/analyze',
@@ -125,7 +125,7 @@ def detect_emotion(message):
 def generate_empathetic_response(message, emotion_data, calendar_events=[]):
     if not OPENROUTER_API_KEY:
         return f"I hear you. It sounds like you're feeling {emotion_data.get('emotion', 'thoughtful')} right now. I'm here to support you. (Add OPENROUTER_API_KEY to enable full AI responses)"
-    
+
     try:
         emotion = emotion_data.get('emotion', 'neutral')
         intensity = emotion_data.get('intensity', 0.5)
@@ -228,32 +228,96 @@ def get_journal_entries():
         return jsonify({"error": str(e)}), 500
 
 # -----------------------------------------------------------
-# Resources & Calendar (same as before)
+# Nationwide + School-Specific Mental Health Resources
 # -----------------------------------------------------------
 @app.route('/api/resources', methods=['GET'])
 def get_resources():
-    school = request.args.get('school', '')
+    school = request.args.get('school', '').strip()
+
+    # Global nationwide resources (always shown)
+    global_resources = [
+        {
+            "name": "988 Suicide & Crisis Lifeline",
+            "description": "Free and confidential support for people in distress, 24/7 across the U.S.",
+            "url": "https://988lifeline.org"
+        },
+        {
+            "name": "Crisis Text Line",
+            "description": "Text HOME to 741741 to connect with a trained crisis counselor (U.S. & Canada).",
+            "url": "https://www.crisistextline.org"
+        },
+        {
+            "name": "7 Cups",
+            "description": "Free emotional support from trained listeners, plus affordable online therapy.",
+            "url": "https://www.7cups.com"
+        },
+        {
+            "name": "SAMHSA National Helpline",
+            "description": "24/7 treatment referral and information for individuals facing mental health or substance use issues.",
+            "url": "https://findtreatment.gov"
+        }
+    ]
+
+    # Local / campus-specific section
+    if not school:
+        school_specific = [{
+            "name": "Select your school",
+            "description": "Enter your school name above to see campus-specific resources."
+        }]
+    else:
+        school_specific = get_school_resources(school)
+
     return jsonify({
-        "global": [
-            {"name": "988 Suicide & Crisis Lifeline", "url": "https://988lifeline.org"},
-            {"name": "Crisis Text Line", "url": "https://www.crisistextline.org"},
-            {"name": "7 Cups", "url": "https://www.7cups.com"}
-        ],
-        "school_specific": get_school_resources(school)
+        "global": global_resources,
+        "school_specific": school_specific
     }), 200
 
 
 def get_school_resources(school):
-    school_lower = school.lower() if school else ""
-    if not school:
-        return [{"name": "Select your school", "description": "Choose your school to see campus-specific resources"}]
-    return [
-        {"name": f"{school} Counseling Center", "description": "Campus mental health services"},
-        {"name": f"{school} Student Wellness", "description": "Wellness and stress management"},
-        {"name": f"{school} Peer Support", "description": "Student-led support groups"}
-    ]
+    """Return custom resource data for known schools, else generic fallback."""
+    school_lower = school.lower()
 
+    if "buffalo" in school_lower or "ub" in school_lower:
+        return [
+            {
+                "name": "UB Counseling Services",
+                "description": "Provides free, confidential counseling and therapy to UB students.",
+                "url": "https://www.buffalo.edu/studentlife/who-we-are/departments/counseling.html"
+            },
+            {
+                "name": "Crisis Services of Erie County",
+                "description": "24-hour crisis hotline and mobile outreach for mental health emergencies.",
+                "url": "https://crisisservices.org/"
+            }
+        ]
+    elif "mit" in school_lower:
+        return [
+            {
+                "name": "MIT Student Mental Health & Counseling",
+                "description": "Support for MIT students' emotional and psychological well-being.",
+                "url": "https://medical.mit.edu/mental-health"
+            }
+        ]
+    elif "ucla" in school_lower:
+        return [
+            {
+                "name": "UCLA Counseling & Psychological Services (CAPS)",
+                "description": "Provides mental health support and workshops for UCLA students.",
+                "url": "https://www.counseling.ucla.edu/"
+            }
+        ]
+    else:
+        return [
+            {
+                "name": f"{school} Counseling Center",
+                "description": "Campus mental health services and support.",
+                "url": "#"
+            }
+        ]
 
+# -----------------------------------------------------------
+# Calendar Mock Data
+# -----------------------------------------------------------
 @app.route('/api/calendar/events', methods=['GET'])
 def get_calendar_events():
     mock_events = [
