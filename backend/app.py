@@ -2,6 +2,11 @@ import os
 from datetime import datetime, timedelta
 
 from flask import Flask, request, jsonify
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return jsonify({"status": "ok", "message": "UniMind backend is running"}), 200
 from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
