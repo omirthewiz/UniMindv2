@@ -54,11 +54,6 @@ const MainLayout: React.FC = () => {
                         {/* Navigation Links using the unified navigate function */}
                         <NavLink to="/" label="Dashboard" onClick={() => navigate("/")} />
                         <NavLink to="/journal" label="Journal" onClick={() => navigate("/journal")} />
-                        <NavLink 
-                            to="/check-in" 
-                            label="Check-In" 
-                            onClick={() => handleNavigation("/check-in", true, 'Check-In')} 
-                        />
                         <NavLink to="/calendar" label="Calendar" onClick={() => navigate("/calendar")} />
                         <NavLink to="/resources" label="Resources" onClick={() => navigate("/resources")} />
                     </nav>

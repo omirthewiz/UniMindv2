@@ -3,7 +3,8 @@ import axios from "axios";
 
 type Link = { name: string; url?: string; description?: string };
 
-const API_URL = "";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
 
 export default function Resources() {
   const [school, setSchool] = useState<string>(
