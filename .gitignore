@@ -65,15 +65,29 @@ Thumbs.db
 service-account*.json
 firebase_credentials.json
 backend/.env
-# frontend
+# ------------------------
+# Frontend
+# ------------------------
 frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.*
 frontend/.env.local
+frontend/.env.development.local
+frontend/.env.production.local
+frontend/.env.test.local
 
-# backend
+# ------------------------
+# Backend
+# ------------------------
 backend/.venv/
 backend/__pycache__/
 backend/.env
-*.pyc
-# OS/editor
+backend/*.pyc
+backend/**/*.pyc
+
+# ------------------------
+# OS / Editor
+# ------------------------
 .DS_Store
 
